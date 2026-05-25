@@ -1,0 +1,265 @@
+{
+  "info": {
+    "name": "EKBMS — Enterprise Knowledge Base Management System",
+    "_postman_id": "ekbms-phase1-collection",
+    "description": "End-to-end Postman collection for EKBMS Phase 1. Covers happy paths, role-gating, validation errors, and 404s. Set the `baseUrl` and `userId` collection variables to switch backends / acting users.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://127.0.0.1:8000", "type": "string"},
+    {"key": "userId", "value": "1", "type": "string", "description": "1=Admin 2/3=Author 4=Reviewer 5/6=Employee"},
+    {"key": "articleId", "value": "1", "type": "string"},
+    {"key": "categoryId", "value": "1", "type": "string"}
+  ],
+  "item": [
+    {
+      "name": "Meta",
+      "item": [
+        {"name": "GET /health",  "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/health",  "host": ["{{baseUrl}}"], "path": ["health"]}}},
+        {"name": "GET /",        "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/",        "host": ["{{baseUrl}}"], "path": [""]}}}
+      ]
+    },
+    {
+      "name": "Roles & Users",
+      "item": [
+        {"name": "GET /roles", "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"]}}},
+        {"name": "GET /users", "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"]}}},
+        {"name": "POST /users (Admin)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "1"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Test Author\",\n  \"email\": \"test.author@ekbms.com\",\n  \"role_id\": 2\n}"},
+            "url": {"raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"]}
+         }},
+        {"name": "POST /users 401 (no header)",
+         "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Test\",\n  \"email\": \"test@ekbms.com\",\n  \"role_id\": 2\n}"},
+            "url": {"raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"]}
+         }},
+        {"name": "POST /users 403 (Employee tries)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "5"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"X\",\n  \"email\": \"x@ekbms.com\",\n  \"role_id\": 2\n}"},
+            "url": {"raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"]}
+         }}
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {"name": "GET /categories",      "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/categories",      "host": ["{{baseUrl}}"], "path": ["categories"]}}},
+        {"name": "GET /categories/tree", "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/categories/tree", "host": ["{{baseUrl}}"], "path": ["categories", "tree"]}}},
+        {"name": "POST /categories (Admin)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "1"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Cloud\",\n  \"parent_id\": 2\n}"},
+            "url": {"raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"]}
+         }},
+        {"name": "POST /categories 422 (empty name)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "1"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"\"\n}"},
+            "url": {"raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"]}
+         }},
+        {"name": "DELETE /categories/{id} (Admin)",
+         "request": {
+            "method": "DELETE",
+            "header": [{"key": "X-User-Id", "value": "1"}],
+            "url": {"raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"]}
+         }}
+      ]
+    },
+    {
+      "name": "Tags",
+      "item": [
+        {"name": "GET /tags", "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/tags", "host": ["{{baseUrl}}"], "path": ["tags"]}}},
+        {"name": "POST /tags (Author)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "2"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"compliance\"\n}"},
+            "url": {"raw": "{{baseUrl}}/tags", "host": ["{{baseUrl}}"], "path": ["tags"]}
+         }}
+      ]
+    },
+    {
+      "name": "Articles — CRUD",
+      "item": [
+        {"name": "GET /articles", "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/articles", "host": ["{{baseUrl}}"], "path": ["articles"]}}},
+        {"name": "GET /articles (filter pending)",
+         "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/articles?status=pending&sort=recent", "host": ["{{baseUrl}}"], "path": ["articles"], "query": [{"key": "status", "value": "pending"}, {"key": "sort", "value": "recent"}]}
+         }},
+        {"name": "GET /articles/{id}",
+         "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/articles/{{articleId}}", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}"]}}},
+        {"name": "GET /articles/9999 404",
+         "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/articles/9999", "host": ["{{baseUrl}}"], "path": ["articles", "9999"]}}},
+        {"name": "POST /articles (Author)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "2"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Password Reset Guide\",\n  \"content\": \"Step 1: Go to the portal...\",\n  \"category_id\": 2,\n  \"tag_names\": [\"security\", \"sop\"]\n}"},
+            "url": {"raw": "{{baseUrl}}/articles", "host": ["{{baseUrl}}"], "path": ["articles"]}
+         }},
+        {"name": "POST /articles 422 (short title)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "2"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"ab\",\n  \"content\": \"\"\n}"},
+            "url": {"raw": "{{baseUrl}}/articles", "host": ["{{baseUrl}}"], "path": ["articles"]}
+         }},
+        {"name": "POST /articles 403 (Employee)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "5"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Should fail\",\n  \"content\": \"x\"\n}"},
+            "url": {"raw": "{{baseUrl}}/articles", "host": ["{{baseUrl}}"], "path": ["articles"]}
+         }},
+        {"name": "PUT /articles/{id} (Author)",
+         "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "2"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"content\": \"Edited content.\"\n}"},
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}"]}
+         }},
+        {"name": "DELETE /articles/{id} (Admin)",
+         "request": {
+            "method": "DELETE",
+            "header": [{"key": "X-User-Id", "value": "1"}],
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}"]}
+         }}
+      ]
+    },
+    {
+      "name": "Articles — Lifecycle",
+      "item": [
+        {"name": "POST /articles/{id}/submit (Author)",
+         "request": {
+            "method": "POST",
+            "header": [{"key": "X-User-Id", "value": "2"}],
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/submit", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "submit"]}
+         }},
+        {"name": "POST /articles/{id}/decision approve (Reviewer)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "4"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"action\": \"approved\",\n  \"comment\": \"Looks good.\"\n}"},
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/decision", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "decision"]}
+         }},
+        {"name": "POST /articles/{id}/decision reject (Reviewer)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "4"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"action\": \"rejected\",\n  \"comment\": \"Needs more detail in step 3.\"\n}"},
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/decision", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "decision"]}
+         }},
+        {"name": "GET /articles/{id}/approvals",
+         "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/approvals", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "approvals"]}}},
+        {"name": "PUT /articles/{id}/status archive (Admin)",
+         "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "1"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"status\": \"archived\"\n}"},
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/status", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "status"]}
+         }}
+      ]
+    },
+    {
+      "name": "Articles — Comments, Ratings, Bookmarks",
+      "item": [
+        {"name": "GET comments",
+         "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/comments", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "comments"]}}},
+        {"name": "POST comment (Employee)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "5"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"body\": \"Very helpful, thanks!\"\n}"},
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/comments", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "comments"]}
+         }},
+        {"name": "POST rating 5 (Employee)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "5"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"stars\": 5\n}"},
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/ratings", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "ratings"]}
+         }},
+        {"name": "POST rating 422 (out of range)",
+         "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "5"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"stars\": 9\n}"},
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/ratings", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "ratings"]}
+         }},
+        {"name": "POST bookmark toggle (Employee)",
+         "request": {
+            "method": "POST",
+            "header": [{"key": "X-User-Id", "value": "5"}],
+            "url": {"raw": "{{baseUrl}}/articles/{{articleId}}/bookmark", "host": ["{{baseUrl}}"], "path": ["articles", "{{articleId}}", "bookmark"]}
+         }}
+      ]
+    },
+    {
+      "name": "Search & Dashboard",
+      "item": [
+        {"name": "GET /search?q=vpn",
+         "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/search?q=vpn", "host": ["{{baseUrl}}"], "path": ["search"], "query": [{"key": "q", "value": "vpn"}]}}},
+        {"name": "GET /search/bookmarks?user_id=5",
+         "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/search/bookmarks?user_id=5", "host": ["{{baseUrl}}"], "path": ["search", "bookmarks"], "query": [{"key": "user_id", "value": "5"}]}}},
+        {"name": "GET /dashboard",
+         "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/dashboard", "host": ["{{baseUrl}}"], "path": ["dashboard"]}}}
+      ]
+    }
+  ]
+}
